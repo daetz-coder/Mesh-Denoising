@@ -1,18 +1,14 @@
 网格去噪
 
->python可视化算法流程：[Mesh-Denoising/Non-Iterative, Feature-Preserving Mesh Smoothing.ipynb at main · daetz-coder/Mesh-Denoising (github.com)](https://github.com/daetz-coder/Mesh-Denoising/blob/main/Non-Iterative%2C Feature-Preserving Mesh Smoothing.ipynb)
+> python可视化算法流程：[Mesh-Denoising/Non-Iterative, Feature-Preserving Mesh Smoothing.ipynb at main · daetz-coder/Mesh-Denoising (github.com)](https://github.com/daetz-coder/Mesh-Denoising/blob/main/Non-Iterative%2C Feature-Preserving Mesh Smoothing.ipynb)
 >
->C++实现：[daetz-coder/Mesh-Denoising: Method for implementing grid denoising in “Non-Iterative, Feature-Preserving Mesh Smoothing“ (github.com)](https://github.com/daetz-coder/Mesh-Denoising)
+> C++实现：[daetz-coder/Mesh-Denoising: Method for implementing grid denoising in “Non-Iterative, Feature-Preserving Mesh Smoothing“ (github.com)](https://github.com/daetz-coder/Mesh-Denoising)
 >
->相关的obj文件[Release v0.1 · daetz-coder/Mesh-Denoising (github.com)](https://github.com/daetz-coder/Mesh-Denoising/releases/tag/add-obj-files)
-
-
+> 相关的obj文件[Release v0.1 · daetz-coder/Mesh-Denoising (github.com)](https://github.com/daetz-coder/Mesh-Denoising/releases/tag/add-obj-files)
 
 ## 简介
 
 本项目基于《Non-Iterative, Feature-Preserving Mesh Smoothing》论文，实现了一种非迭代、特征保留的网格去噪算法。项目通过Python环境下的Jupyter Notebook演示了算法原理与流程，包括利用高斯函数作为空间权重和影响权重，对目标顶点在局部三角面片上的投影进行加权平均，从而平滑噪声同时保留边缘特征。在C++实现部分，借助OpenMesh库完成了OBJ文件的读取、处理与保存，通过高斯权重计算和顶点投影等步骤对整个网格进行平滑处理，并记录每个顶点的移动日志。项目涵盖了算法演示、代码实现、实验环境配置和使用说明。
-
-
 
 ## 一、论文介绍
 
@@ -20,19 +16,17 @@
 
 ![image-20241224210505920](https://daetz-image.oss-cn-hangzhou.aliyuncs.com/img/202412242105005.png)
 
-
-
-
-
 *We employ a spatial weight $f$ that depends on the distance $\|p - c_q  \|$between point $p$ and the centroid $c_q$ of region $q$. We also use an influence weight $g$ that depends on the distance $ \Pi_q(p) - p \|$between the prediction and the original position of $p$. Finally, we weight by the area $a_q$ of the triangles to account for variations in the sampling rate of the surface. The estimate $p'$ for a point on surface $S$ is then:*
 
-$$p' = \frac{1}{k(p)} \sum_{q \in S} \Pi_q(p) \, a_q \, f\left( \| c_q - p \| \right) \, g\left( \| \Pi_q(p) - p \| \right)$$
+$$
+p' = \frac{1}{k(p)} \sum_{q \in S} \Pi_q(p) \, a_q \, f\left( \| c_q - p \| \right) \, g\left( \| \Pi_q(p) - p \| \right)
+$$
 
 *where*
 
-$$k(p) = \sum_{q \in S} a_q \, f\left( \| c_q - p \| \right) \, g\left( \| \Pi_q(p) - p \| \right)$$
-
-
+$$
+k(p) = \sum_{q \in S} a_q \, f\left( \| c_q - p \| \right) \, g\left( \| \Pi_q(p) - p \| \right)
+$$
 
 我们采用的空间权重 $f$ 取决于 与 $q$的质心 $c_q$ 之间的距离 $|| p-c_q||$。我们还使用影响权重 $g$ ，该影响权重取决于预测与$p$的原始位置之间的距离 $||\Pi_q(p)−p∥$ 。最后，我们用三角形的面积 $a_q$ 来衡量表面采样率的变化。表面$S$上一点的估计 $p'$是
 
@@ -48,34 +42,21 @@ $$
 k(p) = \sum_{q \in S} a_q \, f\left( \| c_q - p \| \right) \, g\left( \| \Pi_q(p) - p \| \right)
 $$
 
-
 *Gaussians are used both for the spatial weight f and for the in uence weight g inthis paper. Other robust in uence weightscould also beused, but Gaussians haveperformed wellinour experiments, aswellasthe work ofothers [Smith and Brady 1997; Tomasi and Manduchi1998; Durand and Dorsey 2002].*
 
 *本文中的空间权重 f 和影响权重 g 都使用高斯函数。也可以使用其他强大的影响权重，但高斯模型在我们的实验以及其他人的工作中表现良好*
 
-
-
 作者提到本文中的空间权重 $f$ 和影响权重 $g $都使用**高斯函数**，所以我们在后续也使用高斯函数
 
 + $p$ 表示当前顶点 (需要被去噪的那个顶点)
-
 + $p'$ 表示该顶点去噪后（或平滑后）的新位置
-
 + $q\in S$表示网格上的所有三角面片(或者在实际实现时，往往取“局部邻域”即可)
-
 + $\Pi_{q}(p)$表示将顶点 $p$ 投影到三角面片 $q$ 上得到的“预测点”(prediction)
-
 + $a_q$ 表示三角面片 $q$ 的面积，用来补偿采样不均匀(如果一些区域三角面片更密集，就相当于对该区域要稍加“削弱”或“平衡”)
-
 + $c_q$ 表示三角面片 $q$ 的质心(即该三角形三个顶点的平均位置)
-
 + $f(\| c_q - p \|)$称为**空间权重(spatial weight)**，主要控制“离得远的三角形面片”对当前顶点的贡献要小
-
 + $g(\|\Pi_{q}(p) - p\|)$ 称为**影响权重(influence weight)**，主要控制“预测点离原始位置很远时，该预测应被视为异常/outlier，贡献要小”
-
 + $k(p)$ 是所有权重之和，用来归一化，保证计算出来的 $p'$ 是某种加权平均结果。
-
-
 
 ### 1、顶点移动方向
 
@@ -87,8 +68,6 @@ $$
 
 整个过程并不是“朝法向方向”或“朝平面”的简单移动，而是“由多个邻居面片对顶点进行投影，然后再综合加权”得到一个新的位置。最终效果是：对噪声点进行平滑的同时又能较好地保留边缘或特征。
 
-
-
 ### 2、除三角外不需连通
 
 *Filtering amesh involvesevaluating Equation (3) for every vertex and then moving them asagroup totheir estimated positions. Note that no connectivityisrequired beyond triangles: wesimply use the Euclidean distance tothe centroid ofsurrounding triangles to nd the spatial neighborhoodof avertex. Awider spatial  lter includes alarger number ofneigh bors inthe estimate, and can therefore removea greater amountofnoise, orsmo oth larger features. The in uence weightdetermines when the predictions ofneigh bors are considered outliers (byaccording them less weight), and therebycon trols the size offeatures that are preservedinthe  ltering.*
@@ -98,22 +77,10 @@ $$
 这是指在实际操作中，我们只需要知道当前顶点 $p$的“**空间邻居**”可以由与之相邻的三角面片(或其质心)来确定。也就是说：
 
 + **只关心顶点周围出现的三角面**来构造空间邻域(找出周围面片的质心距离较近者)，不需要再去关心更复杂的网格拓扑(比如网格上更高级别的区域分段之类)。
-
 + 所以只要能找到每个三角面片的几何中心 $c_q$，并且能把顶点 $p$ 投影到该三角面片上 $\Pi_q(p)$，就可以进行权重计算并做加权平均。
-
 + “不需要额外连通”可以理解为，我们不需要一个全局的网格数据结构来进行大规模的遍历，只需要基于局部三角面的几何信息就够了。换句话说，“只要知道局部的三角形信息和它们之间的空间关系(比如质心、面积等)”，就能完成一轮更新。
 
-
-
-
-
-
-
-
-
 ## 二、代码介绍
-
-
 
 ### 1、初始化$p$和$q$
 
@@ -154,9 +121,7 @@ triangles = {
 ### 2、计算$a_q$和$c_q$
 
 + $a_q$表示各个网格三角的面积
-
 + $c_q$表示网格三角的质心
-
 + **质心计算公式**
 
   对于一个二维平面上的三角形，质心是该三角形三个顶点的坐标的**算术平均值**。设三角形的三个顶点坐标为 $(x_1, y_1), (x_2, y_2), (x_3, y_3)$那么三角形的质心 $(x_c,y_c)$ 的坐标可以通过以下公式计算：
@@ -169,31 +134,31 @@ triangles = {
 # 计算每个三角形的平面方程、面积和质心
 for key, tri in triangles.items():
     v1, v2, v3 = tri['vertices']
-    
+  
     # 计算平面法向量
     normal = np.cross(v2 - v1, v3 - v1)
     norm_length = np.linalg.norm(normal)
     normal_unit = normal / norm_length
     tri['normal'] = normal_unit
-    
+  
     # 计算平面方程常数项 c (n·v = c)
     c = np.dot(normal_unit, v1)
     tri['plane_eq'] = f"{normal_unit[0]:.2f}x + {normal_unit[1]:.2f}y + {normal_unit[2]:.2f}z = {c:.2f}"
-    
+  
     # 计算面积 (1/2 * |n|)
     area = 0.5 * norm_length
     tri['area'] = area
-    
+  
     # 计算质心
     centroid = (v1 + v2 + v3) / 3
     tri['centroid'] = centroid
-    
+  
     print(f"Triangle {key}:")
     print(f"  Vertices:\n{tri['vertices']}")
     print(f"  Plane equation: {tri['plane_eq']}")
     print(f"  Area: {tri['area']:.4f}")
     print(f"  Centroid: {tri['centroid']}\n")
-    
+  
 ```
 
 ```less
@@ -207,8 +172,6 @@ for key, tri in triangles.items():
   Area: 3.3541
   Centroid: [2.         3.66666667 1.66666667]
 ```
-
-
 
 ### 3、计算$p$的$\Pi_q(p)$
 
@@ -283,12 +246,6 @@ Projection Πq2(p): [1.28644625 1.14066125 1.5728925 ]
 Projection Πq3(p): [0.64514591 2.70970819 1.88713524]
 ```
 
-
-
-
-
-
-
 ### 4、计算空间权重$ f(r)$
 
 + $ f(r)= f(\| c_q - p \|)$ 表示的是质心$c_q$ 与原点$q$的距离在高斯函数下得到权重
@@ -321,13 +278,10 @@ f(||cq3 - p|| = 2.055) = 0.1211
 
 ![image-20241224200106529](https://daetz-image.oss-cn-hangzhou.aliyuncs.com/img/202412242001592.png)
 
-
-
 ### 5、计算影响权重$g(Δ)$
 
 + $g(Δ)= g(\|\Pi_{q}(p) - p\|)$ 表示的是原点$p$对于$\Pi_{q}(p)$的距离使用高斯函数得到权重
 + 距离越近，权重越高，对$p'$的贡献越大
-
 + 当出现预测点离原始位置很远时，该预测应被视为异常/outlier，贡献要小
 
 ```bash
@@ -343,8 +297,6 @@ for key, proj in projections.items():
     print(f"g(||Π{key}(p) - p|| = {delta:.3f}) = {g:.4f}")
 
 ```
-
-
 
 ```less
 Calculating influence weights g(Δ):
@@ -383,8 +335,6 @@ plt.show()
 
 ```
 
-
-
 ![](https://daetz-image.oss-cn-hangzhou.aliyuncs.com/img/202412242050954.png)
 
 ### 6、计算$k(p)$
@@ -421,8 +371,6 @@ k(p) = wq1 + wq2 + wq3 ≈ 4.3111
 
 
 ```
-
-
 
 ### 7、计算$p'$
 
@@ -497,23 +445,13 @@ plt.show()
 
 ![image-20241224200505740](https://daetz-image.oss-cn-hangzhou.aliyuncs.com/img/202412242005816.png)
 
-
-
-
-
 ## 三、实验报告
 
-
-
 写清楚实验内容、实验环境和实验方法，以及实验结果，可链接图像或录屏（不超过20M）
-
-
 
 ### 1、实验内容
 
 本实验旨在重现论文《Non-Iterative, Feature-Preserving Mesh Smoothing》中提出的非迭代、特征保留的网格去噪算法。实验首先在Python环境下使用NumPy、SciPy、Trimesh和Matplotlib等库进行网格数据的读取与预处理，包括计算法向量和归一化处理，通过计算每个顶点的新位置，利用高斯函数作为空间权重和影响权重，对邻近三角面片的预测点进行加权平均，从而实现平滑去噪的同时保留网格的边缘特征。实验过程中设置了高斯函数的标准差参数σ_f和σ_g，以控制权重分配和特征保留的平衡。最终，通过代码实现顶点位置的更新，保存去噪后的网格并进行可视化对比，验证算法的有效性。整个实验流程模块化设计，确保了算法的可复现性和适应性，为进一步优化和应用提供了基础。并基于上述原理使用c++进行重现，展示去噪后的结果。
-
-
 
 ### 2、实验环境
 
@@ -534,13 +472,7 @@ GCC >= 7.0
 OpenMesh
 ```
 
-
-
-
-
 ### 3、实验方法
-
-
 
 #### 1)、main.cpp
 
@@ -563,8 +495,6 @@ int main(int argc, char* argv[]) {   // main 函数入口，argc 表示命令行
 }
 
 ```
-
-
 
 #### 2)、denoise_obj.hpp
 
@@ -594,10 +524,10 @@ struct Vec3 {
     Vec3 operator+(const Vec3& other) const;   // 向量加法
     Vec3 operator-(const Vec3& other) const;   // 向量减法
     Vec3 operator*(float scalar) const;        // 向量与标量相乘
-    
+  
     float dot(const Vec3& other) const;        // 向量点乘
     Vec3 cross(const Vec3& other) const;       // 向量叉乘
-    
+  
     float length() const;                     // 计算向量长度
     Vec3 normalize() const;                   // 返回单位化后的向量
 
@@ -637,8 +567,6 @@ void denoise_obj(const std::string& input_obj, const std::string& output_obj);
 #endif // DENOISE_OBJ_HPP            // 预处理指令：防止头文件被重复包含的保护宏（结束）
 
 ```
-
-
 
 #### 3)、denoise_obj.cpp
 
@@ -953,8 +881,6 @@ void denoise_obj(const std::string& input_obj, const std::string& output_obj) {
 
 ```
 
-
-
 ### 4、实验结果
 
 由于平滑的结果不是特别明显，这里除了直接比较对比图像，还将各个顶点的位置变化记录，输入日志文件，具体内容如下：
@@ -965,31 +891,13 @@ void denoise_obj(const std::string& input_obj, const std::string& output_obj) {
 
 ![image-20241228193826166](https://daetz-image.oss-cn-hangzhou.aliyuncs.com/img/202412281938398.png)
 
-
-
-
-
 ![image-20250104114922951](https://daetz-image.oss-cn-hangzhou.aliyuncs.com/img/202501041149180.png)
-
-
-
-
 
 ![image-20250104115058843](https://daetz-image.oss-cn-hangzhou.aliyuncs.com/img/202501041150084.png)
 
-
-
-
-
-
-
 ![image-20250104115247255](https://daetz-image.oss-cn-hangzhou.aliyuncs.com/img/202501041152546.png)
 
-
-
 ![image-20250104115359582](https://daetz-image.oss-cn-hangzhou.aliyuncs.com/img/202501041153966.png)
-
-
 
 #### 2)、顶点移动日志
 
@@ -1010,10 +918,6 @@ Vertex 21580 - Original: (-5.63182, 64.2246, -33.6254) | Smoothed: (-5.5907, 64.
 Vertex 21581 - Original: (-8.6238, 62.8402, -30.6838) | Smoothed: (-8.67226, 62.7952, -30.6705)
 
 ```
-
-
-
-
 
 ### 5、使用说明
 
@@ -1041,14 +945,12 @@ Vertex 21581 - Original: (-8.6238, 62.8402, -30.6838) | Smoothed: (-8.67226, 62.
 
 + `CMakeLists.txt` 包含所需的 C++ 标准、源文件列表、依赖库等信息
 + `include/denoise_obj.hpp`声明了与网格去噪（Mesh Denoising）相关的类、函数和数据结构
-+  `log/denoise_log.txt` 记录了网格去噪过程中所有顶点的移动情况
++ `log/denoise_log.txt` 记录了网格去噪过程中所有顶点的移动情况
 + `Non-Iterative, Feature-Preserving Mesh Smoothing.ipynb`使用Jupyter Notebook 文件可视化网格去噪的原理
 + `obj/` 用于存放3D模型，其中 `armadillo_denoised.obj`表示已经去噪后的文件
 + `README.md` 表示项目的概述、安装指南、使用说明、功能介绍
 + `requirements.txt` 包含需要运行Jupyter Notebook 文件所需的依赖
 + `result/` 为了方便比较，我们把网格去噪后的结果正面和背面的对比图放入该文件下
-
-
 
 #### 1)、python
 
@@ -1056,8 +958,6 @@ Vertex 21581 - Original: (-8.6238, 62.8402, -30.6838) | Smoothed: (-8.67226, 62.
 pip install -r requirements.txt 
 # start Jupyter Notebook 
 ```
-
-
 
 #### 2)、c++
 
@@ -1085,3 +985,4 @@ rm -rf build
 
 # use params run
 ./denoise_obj ../obj/armadillo.obj ../obj/armadillo_denoised.obj
+```
