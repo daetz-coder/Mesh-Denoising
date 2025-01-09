@@ -1,6 +1,6 @@
-网格去噪
+# 网格去噪(Mesh-Denoising)
 
-> python可视化算法流程：[Mesh-Denoising/Non-Iterative, Feature-Preserving Mesh Smoothing.ipynb at main · daetz-coder/Mesh-Denoising (github.com)](https://github.com/daetz-coder/Mesh-Denoising/blob/main/Non-Iterative%2C Feature-Preserving Mesh Smoothing.ipynb)
+> python可视化算法流程：[Mesh-Denoising/Non-Iterative, Feature-Preserving Mesh Smoothing.ipynb at main · daetz-coder/Mesh-Denoising (github.com)](https://github.com/daetz-coder/Mesh-Denoising/blob/main/visualization.ipynb)
 >
 > C++实现：[daetz-coder/Mesh-Denoising: Method for implementing grid denoising in “Non-Iterative, Feature-Preserving Mesh Smoothing“ (github.com)](https://github.com/daetz-coder/Mesh-Denoising)
 >
