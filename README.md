@@ -1,3 +1,17 @@
+网格去噪
+
+>python可视化算法流程：[Mesh-Denoising/Non-Iterative, Feature-Preserving Mesh Smoothing.ipynb at main · daetz-coder/Mesh-Denoising (github.com)](https://github.com/daetz-coder/Mesh-Denoising/blob/main/Non-Iterative%2C Feature-Preserving Mesh Smoothing.ipynb)
+>
+>C++实现：[daetz-coder/Mesh-Denoising: Method for implementing grid denoising in “Non-Iterative, Feature-Preserving Mesh Smoothing“ (github.com)](https://github.com/daetz-coder/Mesh-Denoising)
+>
+>相关的obj文件[Release v0.1 · daetz-coder/Mesh-Denoising (github.com)](https://github.com/daetz-coder/Mesh-Denoising/releases/tag/add-obj-files)
+
+
+
+## 简介
+
+本项目基于《Non-Iterative, Feature-Preserving Mesh Smoothing》论文，实现了一种非迭代、特征保留的网格去噪算法。项目通过Python环境下的Jupyter Notebook演示了算法原理与流程，包括利用高斯函数作为空间权重和影响权重，对目标顶点在局部三角面片上的投影进行加权平均，从而平滑噪声同时保留边缘特征。在C++实现部分，借助OpenMesh库完成了OBJ文件的读取、处理与保存，通过高斯权重计算和顶点投影等步骤对整个网格进行平滑处理，并记录每个顶点的移动日志。项目涵盖了算法演示、代码实现、实验环境配置和使用说明。
+
 
 
 ## 一、论文介绍
@@ -10,7 +24,7 @@
 
 
 
-*We employ a spatial weight $f$ that depends on the distance $\|p - c_q  \|$between point $p$ and the centroid $c_q$ of region $q$. We also use an influence weight $g$ that depends on the distance $|| \Pi_q(p) - p \|$between the prediction and the original position of $p$. Finally, we weight by the area $a_q$ of the triangles to account for variations in the sampling rate of the surface. The estimate $p'$ for a point on surface $S$ is then:*
+*We employ a spatial weight $f$ that depends on the distance $\|p - c_q  \|$between point $p$ and the centroid $c_q$ of region $q$. We also use an influence weight $g$ that depends on the distance $ \Pi_q(p) - p \|$between the prediction and the original position of $p$. Finally, we weight by the area $a_q$ of the triangles to account for variations in the sampling rate of the surface. The estimate $p'$ for a point on surface $S$ is then:*
 
 $$p' = \frac{1}{k(p)} \sum_{q \in S} \Pi_q(p) \, a_q \, f\left( \| c_q - p \| \right) \, g\left( \| \Pi_q(p) - p \| \right)$$
 
@@ -33,6 +47,8 @@ $$
 $$
 k(p) = \sum_{q \in S} a_q \, f\left( \| c_q - p \| \right) \, g\left( \| \Pi_q(p) - p \| \right)
 $$
+
+
 *Gaussians are used both for the spatial weight f and for the in uence weight g inthis paper. Other robust in uence weightscould also beused, but Gaussians haveperformed wellinour experiments, aswellasthe work ofothers [Smith and Brady 1997; Tomasi and Manduchi1998; Durand and Dorsey 2002].*
 
 *本文中的空间权重 f 和影响权重 g 都使用高斯函数。也可以使用其他强大的影响权重，但高斯模型在我们的实验以及其他人的工作中表现良好*
